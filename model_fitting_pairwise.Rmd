@@ -1,0 +1,226 @@
+---
+title: "Model fitting"
+author: "Zhang and Feng"
+date: "Updated at `r lubridate::now()`"
+output:
+  html_notebook:
+    number_section: yes
+    theme: readable
+    toc: yes
+    toc_float: yes
+  html_document:
+    df_print: paged
+    toc: yes
+---
+
+```{r load packages and data and basic configurations, message=FALSE, warning=FALSE, include=FALSE, paged.print=FALSE}
+# laod packages
+library(tidyverse)
+library(lavaan)
+library(semPlot)
+# configurations
+cfa_base <- "cfa"
+data_dir <- file.path(cfa_base, "data")
+mdl_spec_dir <- file.path(cfa_base, "modelspec")
+res_dir <- file.path(cfa_base, "result")
+# load data
+ef_data <- read_csv(file.path(data_dir, "EF_Behav_scaled_2114subs.csv"))
+# load model specifications
+mdl_three <- read_lines(file.path(mdl_spec_dir, "full_three_factor.lav"))
+mdl_one <- read_lines(file.path(mdl_spec_dir, "one_factor.lav"))
+mdl_shft_inhb <- read_lines(file.path(mdl_spec_dir, "ShftInhb.lav"))
+mdl_shft_updt <- read_lines(file.path(mdl_spec_dir, "ShftUpdt.lav"))
+mdl_updt_inhb <- read_lines(file.path(mdl_spec_dir, "UpdtInhb.lav"))
+mdl_bifactor <- read_lines(file.path(mdl_spec_dir, "bifactor.lav"))
+mdl_bifactor_updt_shft <- read_lines(file.path(mdl_spec_dir, "bifactor_updt_shft.lav"))
+mdl_bifactor_updt_inhb <- read_lines(file.path(mdl_spec_dir, "bifactor_updt_inhb.lav"))
+mdl_bifactor_inhb_shft <- read_lines(file.path(mdl_spec_dir, "bifactor_inhb_shft.lav"))
+mdl_bifactor_inhb <- read_lines(file.path(mdl_spec_dir, "bifactor_inhb.lav"))
+mdl_bifactor_shft <- read_lines(file.path(mdl_spec_dir, "bifactor_shft.lav"))
+mdl_bifactor_updt <- read_lines(file.path(mdl_spec_dir, "bifactor_updt.lav"))
+# path graph plot
+cfa_plot <- function(mdl){
+  semPaths(mdl, whatLabels = "par", rotation = 4, sizeMan = 10, sizeMan2 = 6.18, sizeLat = 10, mar = c(3, 20, 3, 20), nCharNodes = 0)
+}
+```
+
+# Introduction
+
+Here we try to replicate the empirical result of Miyake (2000). The data are from a project in Beijing Normal University. The following gives a first glimpse of the basic descriptive statistics.
+
+```{r descriptive, echo=FALSE, message=FALSE, warning=FALSE, paged.print=FALSE}
+psych::describe(ef_data) %>%
+  select(vars, n, min, max, skew, kurtosis)
+```
+
+# Confirmatory Factor Analysis
+
+## Three factor model
+
+### Full three factor model
+
+This model assumes that there exist three correlated latent variables. More specifically, the model is:
+
+$$Inhibition =~ AntiSac + StopSignal + Stroop$$
+$$Shifting =~ CateSwitch + ShiftColor + ShiftNumber$$
+$$Updating =~ KeepTrack + spatialWM + WM3 $$
+
+#### Maximum Likelihood Estimation
+
+```{r full three factor}
+fit.three.full.ml <- cfa(mdl_three, ef_data, std.lv = TRUE, missing = "pairwise")
+summary(fit.three.full.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.three.full.ml)
+```
+### Independent three factor model
+
+This model assumes that there exist three independent latent variables.
+
+#### Maximum Likelihood Estimation
+
+```{r independent three factor}
+fit.three.indep.ml <- cfa(mdl_three, ef_data, std.lv = TRUE, missing = "pairwise",orthogonal = TRUE)
+summary(fit.three.indep.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.three.indep.ml)
+```
+## One factor model
+
+This model assumes that there exists only one latent ability.
+
+### Maximum Likelihood Estimation
+
+```{r one factor}
+fit.one.ml <- cfa(mdl_one, ef_data, std.lv = TRUE,missing = "pairwise")
+summary(fit.one.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.one.ml)
+```
+## Two factor model
+
+### Shifting = Inhibition
+
+This model assumes that there exists two latent abilities. In other words, only `Updating` is the differentiated ability.
+
+#### Maximum Likelihood Estimation
+
+```{r two-factor shft.inhb}
+fit.shft.inhb.ml <- cfa(mdl_shft_inhb, ef_data, std.lv = TRUE, missing = "pairwise")
+summary(fit.shft.inhb.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.shft.inhb.ml)
+```
+### Shifting = Updating
+
+This model assumes that there exists two latent abilities. In other words, only `Inhibition` is the differentiated ability.
+
+#### Maximum Likelihood Estimation
+
+```{r two-factor shft.updt}
+fit.shft.updt.ml <- cfa(mdl_shft_updt, ef_data, std.lv = TRUE, missing = "pairwise")
+summary(fit.shft.updt.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.shft.updt.ml)
+```
+### Updating = Inhibition
+
+This model assumes that there exists two latent abilities. In other words, only `Shifting` is the differentiated ability.
+
+#### Maximum Likelihood Estimation
+
+```{r two-factor updt.inhb}
+fit.updt.inhb.ml <- cfa(mdl_updt_inhb, ef_data, std.lv = TRUE, missing = "pairwise")
+summary(fit.updt.inhb.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.updt.inhb.ml)
+```
+# Bifactor Model
+
+## Three factors
+
+### Maximum Likelihood Estimation
+
+```{r bifactor model ML}
+fit.bifac.ml <- cfa(mdl_bifactor, ef_data, std.lv = TRUE, missing = "pairwise", orthogonal = TRUE, estimator = "ML")
+summary(fit.bifac.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.bifac.ml)
+```
+## Two factors
+
+### Updating + Inhibition
+
+#### Maximum Likelihood Estimation
+
+```{r bifactor model UI ML}
+fit.bifac.ui.ml <- cfa(mdl_bifactor_updt_inhb, ef_data, std.lv = TRUE, missing = "pairwise",orthogonal = TRUE, estimator = "ML")
+summary(fit.bifac.ui.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.bifac.ui.ml)
+```
+### Updating + Shifting
+
+#### Maximum Likelihood Estimation
+
+```{r bifactor model US ML}
+fit.bifac.us.ml <- cfa(mdl_bifactor_updt_shft, ef_data, std.lv = TRUE, missing = "pairwise", orthogonal = TRUE, estimator = "ML")
+summary(fit.bifac.us.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.bifac.us.ml)
+```
+### Shifting + Inhibition
+
+#### Maximum Likelihood Estimation
+
+```{r bifactor model IS ML}
+fit.bifac.is.ml <- cfa(mdl_bifactor_inhb_shft, ef_data, std.lv = TRUE, missing = "pairwise", orthogonal = TRUE, estimator = "ML")
+summary(fit.bifac.is.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.bifac.is.ml)
+```
+## one factors
+### inhibition
+### Maximum Likelihood Estimation
+
+```{r bifactor model inhb ML}
+fit.bifac.inhb.ml <- cfa(mdl_bifactor_inhb, ef_data, std.lv = TRUE, missing = "pairwise", orthogonal = TRUE, estimator = "ML")
+summary(fit.bifac.inhb.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.bifac.inhb.ml)
+```
+### shifting
+### Maximum Likelihood Estimation
+
+```{r bifactor model shft ML}
+fit.bifac.shft.ml <- cfa(mdl_bifactor_shft, ef_data, std.lv = TRUE, missing = "pairwise", orthogonal = TRUE, estimator = "ML")
+summary(fit.bifac.shft.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.bifac.shft.ml)
+```
+### updating
+### Maximum Likelihood Estimation
+
+```{r bifactor model updt ML}
+fit.bifac.updt.ml <- cfa(mdl_bifactor_updt, ef_data, std.lv = TRUE, missing = "pairwise", orthogonal = TRUE, estimator = "ML")
+summary(fit.bifac.updt.ml, fit.measures = TRUE, standardized = TRUE)
+cfa_plot(fit.bifac.updt.ml)
+```
+
+### Model comparison
+
+#From the above fitting results, we know that there are three models reaching the acceptable fitting criterion. We will using **likelihood ratio test** to check which is the better model.
+
+```{r mdoel checking bifactor}
+anova(fit.bifac.ml, fit.bifac.us.ml)
+anova(fit.bifac.us.ml, fit.bifac.is.ml)
+anova(fit.bifac.is.ml, fit.bifac.shft.ml)
+anova(fit.bifac.shft.ml, fit.three.full.ml)
+anova(fit.bifac.shft.ml, fit.updt.inhb.ml)
+```
+# Extract scores
+
+#We extract the scores of each subject on each ability to correlate to brain data.
+
+```{r extract scores}
+scores.ml <- predict(fit.three.full.ml)
+write_csv(as.data.frame(scores.ml), file.path(res_dir,"scores_ml_behav_threefactor_full.pairwise.csv"))
+scores.ml <- predict(fit.updt.inhb.ml)
+write_csv(as.data.frame(scores.ml), file.path(res_dir,"scores_ml_twofactor_updtinhb.pairwise.csv"))
+scores.ml <- predict(fit.bifac.ml)
+write_csv(as.data.frame(scores.ml), file.path(res_dir,"scores_ml_bifactor_threefactor_behav.pairwise.csv"))
+scores.ml <- predict(fit.bifac.us.ml)
+write_csv(as.data.frame(scores.ml),file.path(res_dir,"scores_ml_bifactor_updt+shft.behav.pairwise.csv"))
+scores.ml <- predict(fit.bifac.is.ml)
+write_csv(as.data.frame(scores.ml),file.path(res_dir,"scores_ml_bifactor_inhb+shft.behav.pairwise.csv"))
+scores.ml <- predict(fit.bifac.shft.ml)
+write_csv(as.data.frame(scores.ml),file.path(res_dir,"scores_ml_bifactor_shft.behav.pairwise.csv"))
+```
