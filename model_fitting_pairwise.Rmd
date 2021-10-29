@@ -40,7 +40,14 @@ mdl_bifactor_shft <- read_lines(file.path(mdl_spec_dir, "bifactor_shft.lav"))
 mdl_bifactor_updt <- read_lines(file.path(mdl_spec_dir, "bifactor_updt.lav"))
 # path graph plot
 cfa_plot <- function(mdl){
-  semPaths(mdl, whatLabels = "par", rotation = 4, sizeMan = 10, sizeMan2 = 6.18, sizeLat = 10, mar = c(3, 20, 3, 20), nCharNodes = 0)
+    semPaths(
+        mdl, 
+        whatLabels = "par", 
+        intercepts = FALSE,
+        sizeMan = 10, sizeMan2 = 6.18, sizeLat = 10, 
+        rotation = 4, mar = c(3, 20, 3, 20), 
+        nCharNodes = 0
+    )
 }
 ```
 
